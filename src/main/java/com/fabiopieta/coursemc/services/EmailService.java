@@ -1,9 +1,8 @@
 package com.fabiopieta.coursemc.services;
 
-import javax.mail.internet.MimeMessage;
-
 import org.springframework.mail.SimpleMailMessage;
 
+import com.fabiopieta.coursemc.domain.Cliente;
 import com.fabiopieta.coursemc.domain.Pedido;
 
 public interface EmailService {
@@ -12,7 +11,5 @@ public interface EmailService {
 
 	void sendEmail(SimpleMailMessage msg);
 	
-	void sendOrderConfirmationHtmlEmail(Pedido obj);
-
-	void sendHtmlEmail(MimeMessage msg);
+	void sendNewPasswordEmail(Cliente cliente, String newPass);
 }
