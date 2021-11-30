@@ -1,5 +1,6 @@
 package com.fabiopieta.coursemc.services;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fabiopieta.coursemc.domain.Cidade;
 import com.fabiopieta.coursemc.domain.Cliente;
@@ -37,12 +39,17 @@ public class ClienteService {
 	
 	@Autowired
 	private BCryptPasswordEncoder pe;
-	
+
+	@Autowired
+	private S3Service s3Service;
+
 	public Cliente find(Integer id) {
+
 		UserSS user = UserService.authenticated();
 		if (user==null || !user.hasRole(Perfil.ADMIN) && !id.equals(user.getId())) {
 			throw new AuthorizationException("Acesso negado");
 		}
+		
 		Optional<Cliente> obj = repo.findById(id);
 		return obj.orElseThrow(() -> new ObjectNotFoundException(
 				"Objeto não encontrado! Id: " + id + ", Tipo: " + Cliente.class.getName()));
@@ -61,7 +68,6 @@ public class ClienteService {
 		updateData(newObj, obj);
 		return repo.save(newObj);
 	}
-
 	public void delete(Integer id) {
 		find(id);
 		try {
@@ -71,18 +77,19 @@ public class ClienteService {
 			throw new DataIntegrityException("Não é possível excluir porque há pedidos relacionados");
 		}
 	}
-
+	
 	public List<Cliente> findAll() {
 		return repo.findAll();
 	}
-
+	
 	public Page<Cliente> findPage(Integer page, Integer linesPerPage, String orderBy, String direction) {
 		PageRequest pageRequest = PageRequest.of(page, linesPerPage, Direction.valueOf(direction), orderBy);
 		return repo.findAll(pageRequest);
 	}
-
+	
 	public Cliente fromDTO(ClienteDTO objDto) {
-		return new Cliente(objDto.getId(), objDto.getNome(), objDto.getEmail(), null, null, null);	}
+		return new Cliente(objDto.getId(), objDto.getNome(), objDto.getEmail(), null, null, null);
+	}
 	
 	public Cliente fromDTO(ClienteNewDTO objDto) {
 		Cliente cli = new Cliente(null, objDto.getNome(), objDto.getEmail(), objDto.getCpfOuCnpj(), TipoCliente.toEnum(objDto.getTipo()), pe.encode(objDto.getSenha()));
@@ -98,9 +105,13 @@ public class ClienteService {
 		}
 		return cli;
 	}
-
+	
 	private void updateData(Cliente newObj, Cliente obj) {
 		newObj.setNome(obj.getNome());
 		newObj.setEmail(obj.getEmail());
+	}
+
+	public URI uploadProfilePicture(MultipartFile multipartFile) {
+		return s3Service.uploadFile(multipartFile);
 	}
 }
